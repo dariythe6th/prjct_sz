@@ -16,25 +16,35 @@ import math
 import warnings
 import random as rnd
 import kaleido
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext, JobQueue
 from sqlalchemy import Float
 from sqlalchemy import Column, Integer, String, create_engine, ForeignKey, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm.session import sessionmaker, Session
 from sqlalchemy.orm import relationship
-import random
-from datetime import datetime, date, time
+from pytz import timezone
+import datetime
 
 print("Бот запущен.")
 
+def morning(context: CallbackContext):
+    message = "Доброе утро всем! Хорошего всем дня, не забывайте писать отчеты!"
+    context.bot.send_message(chat_id=-1001636279290, text=message)
+    
+def evening(context: CallbackContext):
+    message = "Спокойной ночи!😴 Ложитесь вовремя!"
+    context.bot.send_message(chat_id=-1001636279290, text=message)
+
 Base = declarative_base()
+engine = create_engine('sqlite:///sz.db', echo=True)
+Base.metadata.create_all(engine)
+token = "5003896889:AAFlIPPPr7_-YFsN9_QO9nnO8W2e_L4ZSew"
+updater = Updater(token, use_context=True)
+Base = declarative_base()
+j = updater.job_queue
 
-#def send_message():
- #   context.bot.send_message(chat_id=432526546, text = "Ква")
-
-#schedule.every().day.at("10:14").do(send_message)
-#schedule.every().day.at("02:15").do(send_message)
-
+job_daily = j.run_daily(morning, days=(0, 1, 2, 3, 4, 5, 6), time=datetime.time(9, 0, tzinfo=timezone('Europe/Moscow')))
+j_daily = j.run_daily(evening(), days=(0, 1, 2, 3, 4, 5, 6), time=datetime.time(21, 30, tzinfo=timezone('Europe/Moscow')))
 def check(a):
     if len(a) == 5:
         if  int(a[0] + a[1])< 24 and int(a[3]) <6:
@@ -88,11 +98,10 @@ def on_start(update, context):
     context.bot.send_message(chat_id=chat.id,
                              text="Привет, я твой помощник для сна. \nДля начала напиши во сколько ты хочешь ложиться и вставать под #цель\nЧтобы я смогу помочь тебе со сном утром под #утро пиши когда ты проснулся, во сколько лёг, ну и опиши свое состояние по шкале от 1 до 10")
 
-
 def admin(text):
-    if text == '1533lit':
-        return 1
-    elif text =="":
+
+    if text[0:2] =="ad":
+        #
         return 2
     return False
 
@@ -201,7 +210,7 @@ def ratesleep(x):
     for i in range(person_data.shape[0]):
         if person_data['rate'][i] < 5:
             clrs.append('#2FB0A4')
-        elif person_data['rate'][i] < 8:
+        elif person_data['rate'][i] <= 7:
             clrs.append('#34C1B4')
         else:
             clrs.append('#6DD8CE')
@@ -231,7 +240,7 @@ def on_message(update, context):
     text = update.message.text
 
     newansw = ['', '', '']
-    if admin(text)==1:
+    if text == '1533lit':
         context.bot.delete_message(chat_id=chat.id,
                                    message_id=update.message.message_id)
         with sessionmaker(bind=engine).begin() as session:
@@ -245,7 +254,7 @@ def on_message(update, context):
                 context.bot.send_message(chat_id=chat.id, text="Я вас запомнил, новый админ")
             else:
                 context.bot.send_message(chat_id=chat.id, text="Я вас уже знаю, админ")
-    elif admin(text)==2:
+    elif text[0:2] =="ad":
         pass
     #try:
     s = text
@@ -323,10 +332,7 @@ def on_message(update, context):
          #   pass
 
 
-engine = create_engine('sqlite:///sz.db', echo=True)
-Base.metadata.create_all(engine)
-token = "5003896889:AAFlIPPPr7_-YFsN9_QO9nnO8W2e_L4ZSew"
-updater = Updater(token, use_context=True)
+
 
 dispatcher = updater.dispatcher
 dispatcher.add_handler(CommandHandler("start", on_start))
