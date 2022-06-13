@@ -201,7 +201,7 @@ def ratesleep(x):
     for i in range(person_data.shape[0]):
         if person_data['rate'][i] < 5:
             clrs.append('#2FB0A4')
-        elif person_data['rate'][i] < 7:
+        elif person_data['rate'][i] < 8:
             clrs.append('#34C1B4')
         else:
             clrs.append('#6DD8CE')
