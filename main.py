@@ -68,7 +68,7 @@ class Sleep(Base):
     time_start = Column(String)
     time_end = Column(String)
     date = Column(String)
-    rate = Column(String)
+    rate = Column(Integer)
     k = Column(Integer)
     user_id = Column(Integer, ForeignKey("users.id"))
 
@@ -113,11 +113,11 @@ def prepare():
     users = pd.read_sql("select * from users", conn)
     sleep = pd.read_sql("select * from sleep", conn)
     start_time = pd.to_datetime(sleep['time_start'])
-    end_time = pd.to_datetime(sleep['time_end'])
+    sleep['rate'] = sleep['rate'].astype(int)
     sleep['date'] = pd.to_datetime(sleep['date'], format='%Y-%m-%d')
     sleep['time_start'] = pd.to_timedelta(sleep['time_start'])
     sleep['time_end'] = pd.to_timedelta(sleep['time_end'])
-
+    pd.options.mode.chained_assignment = None
     ref_time = time.fromisoformat('17:30:00')
     for i in range(sleep.shape[0]):
         real_time = start_time[i].time()
@@ -153,7 +153,6 @@ def onesleep(x):
         name="Время подъема",
         marker_color='#21cfbd'
     )
-
     fall_asleep_trace = go.Scatter(
         x=person_data['date'],
         y=fall_asleep_time_scale,
@@ -169,7 +168,6 @@ def onesleep(x):
         mode='lines',
         line=dict(dash='dash')
     )
-
     wake_up_goal_trace = go.Scatter(
         x=person_data['date'],
         y=wake_up_goal,
@@ -178,19 +176,16 @@ def onesleep(x):
         mode='lines',
         line=dict(dash='dash')
     )
-
     fig_sleep.add_trace(wake_up_trace)
     fig_sleep.add_trace(fall_asleep_trace)
     fig_sleep.add_trace(fall_asleep_goal_trace)
     fig_sleep.add_trace(wake_up_goal_trace)
-
     fig_sleep.update_layout(
         title='График отхода ко сну и подъема',
         xaxis_tickformat='%d %B%Y',
         yaxis_tickformat='%H:%M',
         font_size=12
     )
-
     fig_sleep.update_yaxes(
         autorange='reversed'
     )
@@ -201,6 +196,7 @@ def ratesleep(x):
     fig_rates = go.Figure()
     person_data = sleep[sleep['user_id'] == x]
     person_data = person_data.drop_duplicates(subset=['date'])
+    person_data = person_data.reset_index(drop=True)
     clrs = []
     for i in range(person_data.shape[0]):
         if person_data['rate'][i] < 5:
@@ -246,7 +242,7 @@ def on_message(update, context):
             ms = session.query(Admin).filter(Admin.name_id == id_n).first()
             if ms == None:
                 session.add(a1)
-                context.bot.send_message(chat_id=chat.id, text="Я вас запомнил, админ")
+                context.bot.send_message(chat_id=chat.id, text="Я вас запомнил, новый админ")
             else:
                 context.bot.send_message(chat_id=chat.id, text="Я вас уже знаю, админ")
     elif admin(text)==2:
@@ -306,6 +302,16 @@ def on_message(update, context):
                     session.query(Users).filter(Users.name_id==id_n).update({'time_g_end': newansw[1]})
                     context.bot.send_message(chat_id=chat.id, text="Данные обновлены")
             session.commit()
+        if s[1:7] == 'оценка':
+            id_n = update.message.from_user.username
+            with sessionmaker(bind=engine).begin() as session:
+                ms = session.query(Users).filter(Users.name_id == id_n).first()
+                if ms == None:
+                    context.bot.send_message(chat_id=chat.id, text="Введи сначала цель под #цель")
+                else:
+                    ratesleep(int(ms.id))
+                    context.bot.send_photo(chat_id=ms.idt, photo=open("fig.jpeg", 'rb'))
+                    context.bot.send_message(chat_id=chat.id, text="Проверь лс")
 
 
     #except:
@@ -328,4 +334,3 @@ dispatcher.add_handler(MessageHandler(Filters.all, on_message))
 
 updater.start_polling()
 updater.idle()
-
