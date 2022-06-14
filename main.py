@@ -70,7 +70,7 @@ j = updater.job_queue
 
 job_daily = j.run_daily(morning, days=(0, 1, 2, 3, 4, 5, 6), time=datetime.time(9, 0, tzinfo=timezone('Europe/Moscow')))
 j_daily = j.run_daily(evening, days=(0, 1, 2, 3, 4, 5, 6),
-                      time=datetime.time(21, 30, tzinfo=timezone('Europe/Moscow')))
+                      time=datetime.time(22, 45, tzinfo=timezone('Europe/Moscow')))
 
 
 def check(a):
@@ -84,17 +84,12 @@ def check(a):
     return ''
 
 
-def SendTip(count):
-    with sessionmaker(bind=engine).begin() as session:
-        s = session.query(Users).get(count)
-        return s.text
-
 
 def on_start(update, context):
     chat = update.effective_chat
     context.bot.send_message(chat_id=chat.id,
-                             text="Привет, я твой помощник для сна. \nДля начала напиши во сколько ты хочешь ложиться и вставать под #цель\nЧтобы я смогу помочь тебе со сном утром под #утро пиши когда ты проснулся, во сколько лёг, ну и опиши свое состояние по шкале от 1 до 10")
-
+                             text="Привет, я твой помощник для сна. \nДля начала напиши во сколько ты хочешь ложиться и вставать под #цель\nЧтобы я смог помочь тебе со сном утром под #утро пиши когда ты  во сколько лёг,проснулся, ну и опиши свое состояние по шкале от 1 до 10\nДля получения красивого графика по данным сна пиши #график\nДля статистки по качеству сна пиши #оценка")
+    context.bot.send_message(chat_id=chat.id, text="#Пример_хэштега\n23:45\n8:30\nи так далее")
 
 def add(s, newansw):
     answ = s.split('\n')
@@ -281,7 +276,8 @@ def ratesleep(x):
 def on_message(update, context):
     chat = update.effective_chat
     text = update.message.text
-
+    if text=="+":
+        context.bot.send_message(chat_id=-1001636279290, text="Самое время для полезного совета!\nЕсли вы нервничаете или расстраиваетесь из-за того, что не можете заснуть, лучше всего встать, перейти в другую комнату и постараться расслабиться. Нет смысла прилагать усилия, чтобы заснуть.")
     newansw = ['', '', '']
     with sessionmaker(bind=engine).begin() as session:
         Name = update.message.from_user.first_name
@@ -292,7 +288,8 @@ def on_message(update, context):
             ms = session.query(Admin).filter(Admin.idt == id_t).first()
             if ms == None:
                 session.add(a1)
-                context.bot.send_message(chat_id=id_t, text="Я вас запомнил, новый админ")
+                context.bot.send_message(chat_id=id_t, text="Я вас запомнил, новый админ\nТеперь вам доступны новые функции! Вы можете смотреть графики других пользователей\nДля этого напишите сообщение по примеру ниже")
+                context.bot.send_message(chat_id=id_t, text="-график id_пользователя(его можно посмотреть в профиле)")
         elif text[0] == "-" and session.query(Admin).filter(Admin.idt == id_t).first() != None:
             if text[1:7] == "график":
                 idch = text[8::]
@@ -331,8 +328,7 @@ def on_message(update, context):
 
                         ms.users_shares.append(b1)
                         context.bot.send_message(chat_id=chat.id,
-                                                 text='ты лег в ' + newansw[0] + ", проснулся в " + newansw[
-                                                     1] + ", а оценил на " + newansw[2])
+                                                 text="Записал✅")
                     print("DO")
                     session.commit()
                 with sessionmaker(bind=engine).begin() as session:
