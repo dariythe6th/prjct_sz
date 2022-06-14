@@ -351,22 +351,23 @@ def on_message(update, context):
                                                  1] + ", а оценил на " + newansw[2])
                 print("DO")
                 session.commit()
-            sleep, users = prepare()
-            person_data = sleep[sleep['user_id'] == 1]
-            #person_data = person_data.drop_duplicates(subset=['date'])
-            person_data = person_data.reset_index(drop=True)
-            person_data = smth(users, person_data, 1)
-            person_data = prepare2(person_data)
-            print("\n", person_data['date'])
-            person_current_k = person_data[person_data['date'] == pd.Timestamp('now').normalize()]
-            ind = person_current_k.index[0]
-            person_current_k['k'] = sleep_k(person_current_k['ttdiff_start'], ind) + sleep_k(
-                person_current_k['ttdiff_end'], ind) + 1
-            person_data['k'][ind] = person_current_k['k'][ind] + check_k(person_data)
-            person_data['points'][ind] = 15 * person_data['k'][ind]
             with sessionmaker(bind=engine).begin() as session:
-                session.query(Sleep).filter(Sleep.user_id == 1 and Sleep.date ==str(date.today())).update({'k': person_current_k['k'][ind] + check_k(person_data)})
-                session.query(Sleep).filter(Sleep.user_id == 1 and Sleep.date ==str(date.today())).update({'points': int(15 * person_data['k'][ind])})
+                ms = session.query(Users).filter(Users.name_id == id_n).first()
+                sleep, users = prepare()
+                person_data = sleep[sleep['user_id'] == ms.id]
+                #person_data = person_data.drop_duplicates(subset=['date'])
+                person_data = person_data.reset_index(drop=True)
+                person_data = smth(users, person_data, ms.id)
+                person_data = prepare2(person_data)
+                print("\n", person_data['date'])
+                person_current_k = person_data[person_data['date'] == pd.Timestamp('now').normalize()]
+                ind = person_current_k.index[0]
+                person_current_k['k'] = sleep_k(person_current_k['ttdiff_start'], ind) + sleep_k(
+                    person_current_k['ttdiff_end'], ind) + 1
+                person_data['k'][ind] = person_current_k['k'][ind] + check_k(person_data)
+                person_data['points'][ind] = 15 * person_data['k'][ind]
+                session.query(Sleep).filter(Sleep.user_id == ms.id , Sleep.date ==str(date.today())).update({'k': person_current_k['k'][ind] + check_k(person_data)})
+                session.query(Sleep).filter(Sleep.user_id == ms.id , Sleep.date ==str(date.today())).update({'points': int(15 * person_data['k'][ind])})
                 session.commit()
         if s[1:7] == 'график':
             id_n = update.message.from_user.username
