@@ -26,40 +26,7 @@ from pytz import timezone
 import datetime
 
 print("Бот запущен.")
-
-
-def morning(context: CallbackContext):
-    message = "Доброе утро всем! Хорошего всем дня, не забывайте писать отчеты!"
-    context.bot.send_message(chat_id=-1001636279290, text=message)
-
-
-def evening(context: CallbackContext):
-    message = "Спокойной ночи!😴 Ложитесь вовремя!"
-    context.bot.send_message(chat_id=-1001636279290, text=message)
-
-
 Base = declarative_base()
-engine = create_engine('sqlite:///sz.db', echo=True)
-Base.metadata.create_all(engine)
-token = "5003896889:AAFlIPPPr7_-YFsN9_QO9nnO8W2e_L4ZSew"
-updater = Updater(token, use_context=True)
-Base = declarative_base()
-j = updater.job_queue
-
-job_daily = j.run_daily(morning, days=(0, 1, 2, 3, 4, 5, 6), time=datetime.time(9, 0, tzinfo=timezone('Europe/Moscow')))
-j_daily = j.run_daily(evening, days=(0, 1, 2, 3, 4, 5, 6),
-                      time=datetime.time(21, 30, tzinfo=timezone('Europe/Moscow')))
-
-
-def check(a):
-    if len(a) == 5:
-        if int(a[0] + a[1]) < 24 and int(a[3]) < 6:
-            return a + ":00"
-    elif len(a) == 4:
-        if int(a[2]) < 6:
-            b = '0' + a + ":00"
-            return b
-    return ''
 
 
 class Users(Base):
@@ -97,6 +64,38 @@ class Tips(Base):
     __tablename__ = 'tips'
     id = Column(Integer, primary_key=True)
     text = Column(String)
+
+
+def morning(context: CallbackContext):
+    message = "Доброе утро всем! Хорошего всем дня, не забывайте писать отчеты!"
+    context.bot.send_message(chat_id=-1001636279290, text=message)
+
+
+def evening(context: CallbackContext):
+    message = "Спокойной ночи!😴 Ложитесь вовремя!"
+    context.bot.send_message(chat_id=-1001636279290, text=message)
+
+
+engine = create_engine('sqlite:///sz.db', echo=True)
+Base.metadata.create_all(engine)
+token = "5003896889:AAFlIPPPr7_-YFsN9_QO9nnO8W2e_L4ZSew"
+updater = Updater(token, use_context=True)
+j = updater.job_queue
+
+job_daily = j.run_daily(morning, days=(0, 1, 2, 3, 4, 5, 6), time=datetime.time(9, 0, tzinfo=timezone('Europe/Moscow')))
+j_daily = j.run_daily(evening, days=(0, 1, 2, 3, 4, 5, 6),
+                      time=datetime.time(21, 30, tzinfo=timezone('Europe/Moscow')))
+
+
+def check(a):
+    if len(a) == 5:
+        if int(a[0] + a[1]) < 24 and int(a[3]) < 6:
+            return a + ":00"
+    elif len(a) == 4:
+        if int(a[2]) < 6:
+            b = '0' + a + ":00"
+            return b
+    return ''
 
 
 def SendTip(count):
@@ -158,11 +157,11 @@ def prepare2(person_data):
 
 def sleep_k(diff_series, ind):
     groups = pd.qcut(range(15), 181, labels=False)
+    sleep_k=0
     if diff_series[ind] <= 180:
         for i in range(len(groups)):
             if diff_series[ind] < groups[i]:
-                sleep_k = ((
-                                       16 - i) * 0.02333)  # 0.04666 (*15 = 0.7) бонус поделили на 2, тк общий бонус состоит из 2 частей (подъем и отход ко сну)
+                sleep_k = ((16 - i) * 0.02333)  # 0.04666 (*15 = 0.7) бонус поделили на 2, тк общий бонус состоит из 2 частей (подъем и отход ко сну)
                 break
     return sleep_k
 
@@ -353,17 +352,22 @@ def on_message(update, context):
                 print("DO")
                 session.commit()
             sleep, users = prepare()
-            person_data = sleep[sleep['user_id'] == ms.id]
-            person_data = person_data.drop_duplicates(subset=['date'])
-            person_data = smth(users, person_data, ms.id)
+            person_data = sleep[sleep['user_id'] == 1]
+            #person_data = person_data.drop_duplicates(subset=['date'])
+            person_data = person_data.reset_index(drop=True)
+            person_data = smth(users, person_data, 1)
             person_data = prepare2(person_data)
-            if pd.Timestamp('now').normalize() in person_data['date'].unique():
-                person_current_k = person_data[person_data['date'] == pd.Timestamp('now').normalize()]
-                ind = person_current_k.index[0]
-                person_current_k['k'] = sleep_k(person_current_k['ttdiff_start'], ind) + sleep_k(
-                    person_current_k['ttdiff_end'], ind) + 1
-                session.query(Sleep).filter(Sleep.idt == id_t).update({'k': person_current_k['k'][ind] + check_k()})
-                session.query(Sleep).filter(Sleep.idt == id_t).update({'points': 15 * person_data['k'][ind]})
+            print("\n", person_data['date'])
+            person_current_k = person_data[person_data['date'] == pd.Timestamp('now').normalize()]
+            ind = person_current_k.index[0]
+            person_current_k['k'] = sleep_k(person_current_k['ttdiff_start'], ind) + sleep_k(
+                person_current_k['ttdiff_end'], ind) + 1
+            person_data['k'][ind] = person_current_k['k'][ind] + check_k(person_data)
+            person_data['points'][ind] = 15 * person_data['k'][ind]
+            with sessionmaker(bind=engine).begin() as session:
+                session.query(Sleep).filter(Sleep.user_id == 1 and Sleep.date ==str(date.today())).update({'k': person_current_k['k'][ind] + check_k(person_data)})
+                session.query(Sleep).filter(Sleep.user_id == 1 and Sleep.date ==str(date.today())).update({'points': int(15 * person_data['k'][ind])})
+                session.commit()
         if s[1:7] == 'график':
             id_n = update.message.from_user.username
             with sessionmaker(bind=engine).begin() as session:
