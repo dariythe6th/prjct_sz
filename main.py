@@ -276,40 +276,39 @@ def ratesleep(x):
 def on_message(update, context):
     chat = update.effective_chat
     text = update.message.text
-    if text=="+":
-        context.bot.send_message(chat_id=-1001636279290, text="Самое время для полезного совета!\nЕсли вы нервничаете или расстраиваетесь из-за того, что не можете заснуть, лучше всего встать, перейти в другую комнату и постараться расслабиться. Нет смысла прилагать усилия, чтобы заснуть.")
     newansw = ['', '', '']
-    with sessionmaker(bind=engine).begin() as session:
-        Name = update.message.from_user.first_name
-        id_n = update.message.from_user.username
-        id_t = update.message.from_user.id
-        if text == '1533lit':
-            a1 = Admin(name=Name, name_id=id_n, idt=id_t)
-            ms = session.query(Admin).filter(Admin.idt == id_t).first()
-            if ms == None:
-                session.add(a1)
-                context.bot.send_message(chat_id=id_t, text="Я вас запомнил, новый админ\nТеперь вам доступны новые функции! Вы можете смотреть графики других пользователей\nДля этого напишите сообщение по примеру ниже")
-                context.bot.send_message(chat_id=id_t, text="-график id_пользователя(его можно посмотреть в профиле)")
-        elif text[0] == "-" and session.query(Admin).filter(Admin.idt == id_t).first() != None:
-            if text[1:7] == "график":
-                idch = text[8::]
-                ms = session.query(Users).filter(Users.name_id == idch).first()
-                if ms == None:
-                    context.bot.send_message(chat_id=id_t, text="Такого пользователя нет")
-                else:
-                    onesleep(ms.id)
-                    context.bot.send_photo(chat_id=id_t, photo=open("fig.jpeg", 'rb'))
-            elif text[1:7] == "оценка":
-                idch = text[8::]
-                ms = session.query(Users).filter(Users.name_id == idch).first()
-                if ms == None:
-                    context.bot.send_message(chat_id=chat.id, text="Такого пользователя нет")
-                else:
-                    ratesleep(int(ms.id))
-                    context.bot.send_photo(chat_id=chat.id, photo=open("fig.jpeg", 'rb'))
     try:
-        s = text
+        with sessionmaker(bind=engine).begin() as session:
+            Name = update.message.from_user.first_name
+            id_n = update.message.from_user.username
+            id_t = update.message.from_user.id
+            if text == '1533lit':
+                a1 = Admin(name=Name, name_id=id_n, idt=id_t)
+                ms = session.query(Admin).filter(Admin.idt == id_t).first()
+                if ms == None:
+                    session.add(a1)
+                    context.bot.send_message(chat_id=id_t, text="Я вас запомнил, новый админ\nТеперь вам доступны новые функции! Вы можете смотреть графики других пользователей\nДля этого напишите сообщение по примеру ниже")
+                    context.bot.send_message(chat_id=id_t, text="-график id_пользователя(его можно посмотреть в профиле)")
+            elif text[0] == "-" and session.query(Admin).filter(Admin.idt == id_t).first() != None:
+                if text[1:7] == "график":
+                    idch = text[8::]
+                    ms = session.query(Users).filter(Users.name_id == idch).first()
+                    if ms == None:
+                        context.bot.send_message(chat_id=id_t, text="Такого пользователя нет")
+                    else:
+                        onesleep(ms.id)
+                        context.bot.send_photo(chat_id=id_t, photo=open("fig.jpeg", 'rb'))
+                elif text[1:7] == "оценка":
+                    idch = text[8::]
+                    ms = session.query(Users).filter(Users.name_id == idch).first()
+                    if ms == None:
+                        context.bot.send_message(chat_id=chat.id, text="Такого пользователя нет")
+                    else:
+                        ratesleep(int(ms.id))
+                        context.bot.send_photo(chat_id=chat.id, photo=open("fig.jpeg", 'rb'))
 
+        s = text
+        sleep, users = prepare()
         if s[0] == '#':
             if s[1:5] == 'утро':
 
@@ -333,9 +332,8 @@ def on_message(update, context):
                     session.commit()
                 with sessionmaker(bind=engine).begin() as session:
                     ms = session.query(Users).filter(Users.name_id == id_n).first()
-                    sleep, users = prepare()
                     person_data = sleep[sleep['user_id'] == ms.id]
-                    #person_data = person_data.drop_duplicates(subset=['date'])
+                    person_data = person_data.drop_duplicates(subset=['date'])
                     person_data = person_data.reset_index(drop=True)
                     person_data = smth(users, person_data, ms.id)
                     person_data = prepare2(person_data)
@@ -388,6 +386,19 @@ def on_message(update, context):
                         ratesleep(int(ms.id))
                         context.bot.send_photo(chat_id=ms.idt, photo=open("fig.jpeg", 'rb'))
                         context.bot.send_message(chat_id=chat.id, text="Проверь лс")
+            if s[1:8]=="рейтинг":
+                with sessionmaker(bind=engine).begin() as session:
+                    b1 = Sleep(time_start=newansw[0], time_end=newansw[1], date=today, rate=newansw[2])
+                    ms = session.query(Users).filter(Users.name_id == id_n).first()
+                    if ms == None:
+                        context.bot.send_message(chat_id=chat.id, text="Введи сначала цель под #цель")
+
+                users['total_points'] = 0 * users.shape[0]
+                ind = users[users['id'] == x].index[0]
+                users['total_points'][ind] = person_data['points'].sum()
+                rating = rating()
+                for i in range(rating.shape[0]):
+                    print(i + 1, rating['name'][i], ' - ', rating['total_points'][i])
 
     except:
         if s[0:5] == '#утро' or s [0:5]=="#цель":
