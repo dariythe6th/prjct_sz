@@ -61,6 +61,10 @@ def evening(context: CallbackContext):
     message = "Спокойной ночи!😴 Ложитесь вовремя!"
     context.bot.send_message(chat_id=-1001636279290, text=message)
 
+def advice( context: CallbackContext):
+    with sessionmaker(bind=engine).begin() as session:
+        adv =str(session.query(Users).get(datetime.isoweekday()))
+        context.bot.send_message(chat_id=-1001636279290, text=adv)
 
 engine = create_engine('sqlite:///sz.db', echo=True)
 Base.metadata.create_all(engine)
@@ -68,10 +72,9 @@ token = "5003896889:AAFlIPPPr7_-YFsN9_QO9nnO8W2e_L4ZSew"
 updater = Updater(token, use_context=True)
 j = updater.job_queue
 
-job_daily = j.run_daily(morning, days=(0, 1, 2, 3, 4, 5, 6), time=datetime.time(9, 0, tzinfo=timezone('Europe/Moscow')))
-j_daily = j.run_daily(evening, days=(0, 1, 2, 3, 4, 5, 6),
-                      time=datetime.time(22, 45, tzinfo=timezone('Europe/Moscow')))
-
+job_daily = j.run_daily(morning, days=(0, 1, 2, 3, 4, 5, 6), time=datetime.time(8, 0, tzinfo=timezone('Europe/Moscow')))
+j_daily = j.run_daily(evening, days=(0, 1, 2, 3, 4, 5, 6), time=datetime.time(21, 45, tzinfo=timezone('Europe/Moscow')))
+jo_daily = j.run_daily(advice, days=(0, 1, 2, 3, 4, 5, 6), time=datetime.time(19, 00, tzinfo=timezone('Europe/Moscow')))
 
 def check(a):
     if len(a) == 5:
@@ -86,8 +89,38 @@ def check(a):
 
 def on_start(update, context):
     chat = update.effective_chat
+    with sessionmaker(bind=engine).begin() as session:
+        if session.query(Tips).filter(Tips.id == 1).first()!=None:
+            for i in range(1, 8):
+                obj = session.query(Tips).filter(Tips.id == i).first()
+                session.delete(obj)
+        session.commit()
+
+    with sessionmaker(bind=engine).begin() as session:
+        u1 = Tips(
+            text="Самое время для полезного совета!🌟\nИспользуйте методики для релаксации\n Исследователи полагают, что как минимум 50% случаев бессоницы связаны с эмоциями или стрессом. Поищите разгрузочную деятельность, чтобы уменьшить стресс и вы заметите, что результатом будет более качественный сон. Доказанные методы — ведение дневника, упражнения на глубокое дыхание, медитация, физическая нагрузка и ведение журнала благодарности (запись чего-то, чему вы благодарны каждый день).")
+        session.add(u1)
+        u1 = Tips(
+            text="Самое время для полезного совета!🌟\nФизическая нагрузка\n У нагрузки слишком много преимуществ, чтобы все их тут перечислять. Физические упражнения помогут мозгу и телу расслабиться перед сном. Кроме того, чрезмерный вес тела может негативно влиять на режим сна. Роль физической нагрузки с годами возрастает. Подтянутые взрослые среднего возраста спят значительно крепче, чем люди того же возраста с избыточным весом. Одно предостережение: старайтесь выполнять нагрузку за 2-3 часа до сна, поскольку ментальная и физическая стимуляция могут ввести нервную систему в возбуждённое состояние и мешать вам уснуть.")
+        session.add(u1)
+        u1 = Tips(
+            text="Самое время для полезного совета!🌟\nЗвук\n Тихое пространство — ключевой момент для хорошего сна. Если спокойствия и тишины трудно добиться, попытайтесь контролировать звуки создав 'белый шум' вентилятором. Или используйте ушные затычки.")
+        session.add(u1)
+        u1 = Tips(
+            text="Самое время для полезного совета!🌟\nИспользуйте спальню только для сна\n Ваша спальня обустроена для хорошего сна? Идеальное место для сна должно быть тёмным, прохладным и спокойным. Не превращайте свою спальню в многофункциональную комнату. Уберите из неё телевизор, ноутбук, электронику и склад, тогда там будет легче засыпать и сложнее отвлечься. Если вы идёте в спальню, идите туда, чтобы спать.")
+        session.add(u1)
+        u1 = Tips(
+            text="Самое время для полезного совета!🌟\nИзбегайте кофеин\n Если у вас проблемы с засыпанием, избегайте кофеин в своей диете. Если вы не можете обойтись без кружки кофе с утра, откажитесь от кофе (и кофеиносодержащих напитков — чай, кола, энергетики — прим. переводчика) после обеда. Это даст кофеину достаточно времени вывестись до сна.")
+        session.add(u1)
+        u1 = Tips(
+            text="Самое время для полезного совета!🌟\nПриглушайте свет\n Когда на улице темнеет, приглушайте свет в доме и снижайте голубой или свет дневного спектра в своём окружении. Используйте приложения, которые создают световые фильтры на экранах и подстраивают их температуру под время суток.")
+        session.add(u1)
+        u1 = Tips(
+            text="Самое время для полезного совета!🌟\nСфокусируйтесь на двух факторах: когда вы идёте спать и сколько вы спите\n Временная привязка — точки во времени, когда вы ложитесь спать. То, во сколько вы засыпаете, важно: если вы идёте в постель примерно в одинаковое время каждую ночь, вашему телу легче выработать хорошие привычки сна. Качество и количество сна улучшатся, если вы будете ложиться раньше, примерно в одно время и вставать так же в одно время.")
+        session.add(u1)
+        session.commit()
     context.bot.send_message(chat_id=chat.id,
-                             text="Привет, я твой помощник для сна🌙\n\n✨Для корректной работы напиши мне лично!✨\n\nДля начала напиши во сколько ты хочешь ложиться и вставать под #цель\nЧтобы я смог помочь тебе со сном утром под #утро пиши когда ты  во сколько лёг,проснулся, ну и опиши свое состояние по шкале от 1 до 10\nДля получения красивого графика по данным сна пиши #график\nДля статистки по качеству сна пиши #оценка")
+                             text="Привет, я твой помощник для сна🌙\n\n✨Для корректной работы напиши мне лично!✨\n\nДля начала напиши во сколько ты хочешь ложиться и вставать под #цель\nЧтобы я смог помочь тебе со сном утром, под #утро пиши во сколько лёг, проснулся и опиши свое состояние по шкале от 1 до 10.\nДля получения красивого графика по данным сна пиши #график.\nДля статистки по качеству сна пиши #оценка.\nДля получения рейтинга пиши #рейтинг")
     context.bot.send_message(chat_id=chat.id, text="#Пример_хэштега\n23:45\n8:30\nи так далее")
 
 
@@ -320,141 +353,143 @@ def on_message(update, context):
     chat = update.effective_chat
     text = update.message.text
     newansw = ['', '', '']
-    #try:
-    with sessionmaker(bind=engine).begin() as session:
-        Name = update.message.from_user.first_name
-        id_n = update.message.from_user.username
-        id_t = update.message.from_user.id
-        if text == '1533lit':
-            a1 = Admin(name=Name, name_id=id_n, idt=id_t)
-            ms = session.query(Admin).filter(Admin.idt == id_t).first()
-            if ms == None:
-                session.add(a1)
-                context.bot.send_message(chat_id=id_t, text="Я вас запомнил, новый админ\nТеперь вам доступны новые функции! Вы можете смотреть графики других пользователей\nДля этого напишите сообщение по примеру ниже")
-                context.bot.send_message(chat_id=id_t, text="-график id_пользователя(его можно посмотреть в профиле)")
-        elif text[0] == "-" and session.query(Admin).filter(Admin.idt == id_t).first() != None:
-            if text[1:7] == "график":
-                idch = text[8::]
-                ms = session.query(Users).filter(Users.name_id == idch).first()
-                if ms == None:
-                    context.bot.send_message(chat_id=id_t, text="Такого пользователя нет")
-                else:
-                    onesleep(ms.id)
-                    context.bot.send_photo(chat_id=id_t, photo=open("fig.jpeg", 'rb'))
-            elif text[1:7] == "оценка":
-                idch = text[8::]
-                ms = session.query(Users).filter(Users.name_id == idch).first()
-                if ms == None:
-                    context.bot.send_message(chat_id=chat.id, text="Такого пользователя нет")
-                else:
-                    ratesleep(int(ms.id))
-                    context.bot.send_photo(chat_id=chat.id, photo=open("fig.jpeg", 'rb'))
-
-    s = text
-    sleep, users = prepare()
-    if s[0] == '#':
-        if s[1:5] == 'утро':
-
-            newansw = add(s, newansw)
-
-            today = str(date.today())
-            if newansw[0] == '' or newansw[1] == '' or newansw[2] == '':
-                raise OSError
-            id_n = update.message.from_user.username
-            with sessionmaker(bind=engine).begin() as session:
-                b1 = Sleep(time_start=newansw[0], time_end=newansw[1], date=today, rate=newansw[2])
-                ms = session.query(Users).filter(Users.name_id == id_n).first()
-                if ms == None:
-                    context.bot.send_message(chat_id=chat.id, text="Введи сначала цель под #цель")
-                else:
-
-                    ms.users_shares.append(b1)
-                    session.commit()
-                    with sessionmaker(bind=engine).begin() as session:
-                        ms = session.query(Users).filter(Users.name_id == id_n).first()
-                        sleep, users = prepare()
-                        person_data = pers_data(sleep, ms.id)
-                        person_data = goals_td(users, person_data, ms.id)
-                        person_data = time_diff(person_data)
-                        print("\n", person_data['date'])
-                        if daily_change(person_data) > 0:
-                            context.bot.send_message(chat_id=chat.id, text='Вау! Сегодня твой результат на '+ str(daily_change(person_data))+
-                                  '% ближе к целевому времени подъема и отхода ко сну, чем в день прошлого отчёта! Так держать🤩')
-                        elif daily_change(person_data) < 0:
-                            context.bot.send_message(chat_id=chat.id, text='Сегодня твой результат на '+ str(daily_change(person_data)*-1)+
-                                  '% дальше от целевого времени подъема и отхода ко сну, чем в день прошлого отчёта. Ты всё равно молодец, что продолжаешь отчитываться! В следующий раз постарайся уделить больше внимания сну🤗')
-                        else:
-                            context.bot.send_message(chat_id=chat.id, text='Записал✅')
-
-                print("DO")
-            with sessionmaker(bind=engine).begin() as session:
-                sleep, users = prepare()
-                ms = session.query(Users).filter(Users.name_id == id_n).first()
-                person_data = pers_data(sleep, ms.id)
-                person_data = goals_td(users, person_data, ms.id)
-                person_data = time_diff(person_data)
-                print("\n", person_data['date'])
-                if pd.Timestamp('now').normalize() in person_data['date'].unique():
-                    person_current_k = person_data[person_data['date'] == pd.Timestamp('now').normalize()]
-                    ind = person_current_k.index[0]
-                    person_current_k['k'] = sleep_k(person_current_k['ttdiff_start'], ind) + sleep_k(
-                        person_current_k['ttdiff_end'], ind) + 1
-                    person_data['k'][ind] = person_current_k['k'][ind] + check_k(person_data)
-                    person_data['points'][ind] = 15 * person_data['k'][ind]
-                    session.query(Sleep).filter(Sleep.user_id == ms.id , Sleep.date ==str(date.today())).update({'k': person_current_k['k'][ind] + check_k(person_data)})
-                    session.query(Sleep).filter(Sleep.user_id == ms.id , Sleep.date ==str(date.today())).update({'points': int(15 * person_data['k'][ind])})
-                    session.commit()
-        if s[1:7] == 'график':
-            id_n = update.message.from_user.username
-            with sessionmaker(bind=engine).begin() as session:
-                ms = session.query(Users).filter(Users.idt == id_t).first()
-                if ms == None:
-                    context.bot.send_message(chat_id=chat.id, text="Введи сначала цель под #цель")
-                else:
-                    onesleep(ms.id)
-                    context.bot.send_photo(chat_id=ms.idt, photo=open("fig.jpeg", 'rb'))
-                    context.bot.send_message(chat_id=chat.id, text="Проверь лс")
-        if s[1:5] == 'цель':
-            newansw = add(s, newansw)
-            if newansw[0] == '' or newansw[1] == '':
-                raise EOFError
+    try:
+        with sessionmaker(bind=engine).begin() as session:
             Name = update.message.from_user.first_name
             id_n = update.message.from_user.username
             id_t = update.message.from_user.id
-            u1 = Users(name=Name, name_id=id_n, idt=id_t, time_g_start=newansw[0], time_g_end=newansw[1])
-            with sessionmaker(bind=engine).begin() as session:
-                ms = session.query(Users).filter(Users.name_id == id_n).first()
+            if text == '1533lit':
+                a1 = Admin(name=Name, name_id=id_n, idt=id_t)
+                ms = session.query(Admin).filter(Admin.idt == id_t).first()
                 if ms == None:
-                    session.add(u1)
-                    context.bot.send_message(chat_id=chat.id, text="Данные записаны")
-                else:
+                    session.add(a1)
+                    context.bot.send_message(chat_id=id_t, text="Я вас запомнил, новый админ\nТеперь вам доступны новые функции! Вы можете смотреть графики других пользователей\nДля этого напишите сообщение по примеру ниже")
+                    context.bot.send_message(chat_id=id_t, text="-график id_пользователя(его можно посмотреть в профиле)")
+            elif text[0] == "-" and session.query(Admin).filter(Admin.idt == id_t).first() != None:
+                if text[1:7] == "график":
+                    idch = text[8::]
+                    ms = session.query(Users).filter(Users.name_id == idch).first()
+                    if ms == None:
+                        context.bot.send_message(chat_id=id_t, text="Такого пользователя нет")
+                    else:
+                        onesleep(ms.id)
+                        context.bot.send_photo(chat_id=id_t, photo=open("fig.jpeg", 'rb'))
+                elif text[1:7] == "оценка":
+                    idch = text[8::]
+                    ms = session.query(Users).filter(Users.name_id == idch).first()
+                    if ms == None:
+                        context.bot.send_message(chat_id=chat.id, text="Такого пользователя нет")
+                    else:
+                        ratesleep(int(ms.id))
+                        context.bot.send_photo(chat_id=chat.id, photo=open("fig.jpeg", 'rb'))
 
-                    session.query(Users).filter(Users.name_id == id_n).update({'time_g_start': newansw[0]})
-                    session.query(Users).filter(Users.name_id == id_n).update({'time_g_end': newansw[1]})
-                    context.bot.send_message(chat_id=chat.id, text="Данные обновлены")
-            session.commit()
-        if s[1:7] == 'оценка':
-            id_n = update.message.from_user.username
-            with sessionmaker(bind=engine).begin() as session:
-                ms = session.query(Users).filter(Users.idt == id_t).first()
-                if ms == None:
-                    context.bot.send_message(chat_id=chat.id, text="Введи сначала цель под #цель")
-                else:
-                    ratesleep(int(ms.id))
-                    context.bot.send_photo(chat_id=ms.idt, photo=open("fig.jpeg", 'rb'))
-                    context.bot.send_message(chat_id=chat.id, text="Проверь лс")
-        if s[1:8]=="рейтинг":
-            with sessionmaker(bind=engine).begin() as session:
-                ms = session.query(Users).filter(Users.name_id == id_n).first()
-                if ms == None:
-                    context.bot.send_message(chat_id=chat.id, text="Введи сначала цель под #цель")
-                else:
-                    rating = Rating(users,sleep)
-                    rt=''
-                    for i in range(rating.shape[0]):
-                        rt+=str(i + 1)+") "+ str(rating['name'][i])+ ' - '+str( round(rating['total_points'][i]))+"\n"
-                    context.bot.send_message(chat_id=chat.id, text= rt)
-    #except:
+        s = text
+        sleep, users = prepare()
+        if s[0] == '#':
+            if s[1:5] == 'утро':
+
+                newansw = add(s, newansw)
+
+                today = str(date.today())
+                if newansw[0] == '' or newansw[1] == '' or newansw[2] == '':
+                    raise OSError
+                id_n = update.message.from_user.username
+                with sessionmaker(bind=engine).begin() as session:
+                    b1 = Sleep(time_start=newansw[0], time_end=newansw[1], date=today, rate=newansw[2])
+                    ms = session.query(Users).filter(Users.name_id == id_n).first()
+                    if ms == None:
+                        context.bot.send_message(chat_id=chat.id, text="Введи сначала цель под #цель")
+                    else:
+
+                        ms.users_shares.append(b1)
+                        session.commit()
+                        with sessionmaker(bind=engine).begin() as session:
+                            ms = session.query(Users).filter(Users.name_id == id_n).first()
+                            sleep, users = prepare()
+                            person_data = pers_data(sleep, ms.id)
+                            person_data = goals_td(users, person_data, ms.id)
+                            person_data = time_diff(person_data)
+                            print("\n", person_data['date'])
+                            if daily_change(person_data) > 0:
+                                context.bot.send_message(chat_id=chat.id, text='Вау! Сегодня твой результат на '+ str(daily_change(person_data))+
+                                      '% ближе к целевому времени подъема и отхода ко сну, чем в день прошлого отчёта! Так держать🤩')
+                            elif daily_change(person_data) < 0:
+                                context.bot.send_message(chat_id=chat.id, text='Сегодня твой результат на '+ str(daily_change(person_data)*-1)+
+                                      '% дальше от целевого времени подъема и отхода ко сну, чем в день прошлого отчёта. Ты всё равно молодец, что продолжаешь отчитываться! В следующий раз постарайся уделить больше внимания сну🤗')
+                            else:
+                                context.bot.send_message(chat_id=chat.id, text='Записал✅')
+
+                    print("DO")
+                with sessionmaker(bind=engine).begin() as session:
+                    sleep, users = prepare()
+                    ms = session.query(Users).filter(Users.name_id == id_n).first()
+                    person_data = pers_data(sleep, ms.id)
+                    person_data = goals_td(users, person_data, ms.id)
+                    person_data = time_diff(person_data)
+                    print("\n", person_data['date'])
+                    if pd.Timestamp('now').normalize() in person_data['date'].unique():
+                        person_current_k = person_data[person_data['date'] == pd.Timestamp('now').normalize()]
+                        ind = person_current_k.index[0]
+                        person_current_k['k'] = sleep_k(person_current_k['ttdiff_start'], ind) + sleep_k(
+                            person_current_k['ttdiff_end'], ind) + 1
+                        person_data['k'][ind] = person_current_k['k'][ind] + check_k(person_data)
+                        person_data['points'][ind] = 15 * person_data['k'][ind]
+                        session.query(Sleep).filter(Sleep.user_id == ms.id , Sleep.date ==str(date.today())).update({'k': person_current_k['k'][ind] + check_k(person_data)})
+                        session.query(Sleep).filter(Sleep.user_id == ms.id , Sleep.date ==str(date.today())).update({'points': int(15 * person_data['k'][ind])})
+                        session.commit()
+            if s[1:7] == 'график':
+                id_n = update.message.from_user.username
+                with sessionmaker(bind=engine).begin() as session:
+                    ms = session.query(Users).filter(Users.idt == id_t).first()
+                    if ms == None:
+                        context.bot.send_message(chat_id=chat.id, text="Введи сначала цель под #цель")
+                    else:
+                        onesleep(ms.id)
+                        context.bot.send_photo(chat_id=ms.idt, photo=open("fig.jpeg", 'rb'))
+                        context.bot.send_message(chat_id=chat.id, text="Проверь лс")
+            if s[1:5] == 'цель':
+                newansw = add(s, newansw)
+                if newansw[0] == '' or newansw[1] == '':
+                    raise EOFError
+                Name = update.message.from_user.first_name
+                id_n = update.message.from_user.username
+                id_t = update.message.from_user.id
+                u1 = Users(name=Name, name_id=id_n, idt=id_t, time_g_start=newansw[0], time_g_end=newansw[1])
+                with sessionmaker(bind=engine).begin() as session:
+                    ms = session.query(Users).filter(Users.name_id == id_n).first()
+                    if ms == None:
+                        session.add(u1)
+                        context.bot.send_message(chat_id=chat.id, text="Данные записаны")
+                    else:
+
+                        session.query(Users).filter(Users.name_id == id_n).update({'time_g_start': newansw[0]})
+                        session.query(Users).filter(Users.name_id == id_n).update({'time_g_end': newansw[1]})
+                        context.bot.send_message(chat_id=chat.id, text="Данные обновлены")
+                session.commit()
+            if s[1:7] == 'оценка':
+                id_n = update.message.from_user.username
+                with sessionmaker(bind=engine).begin() as session:
+                    ms = session.query(Users).filter(Users.idt == id_t).first()
+                    if ms == None:
+                        context.bot.send_message(chat_id=chat.id, text="Введи сначала цель под #цель")
+                    else:
+                        ratesleep(int(ms.id))
+                        context.bot.send_photo(chat_id=ms.idt, photo=open("fig.jpeg", 'rb'))
+                        context.bot.send_message(chat_id=chat.id, text="Проверь лс")
+            if s[1:8]=="рейтинг":
+                with sessionmaker(bind=engine).begin() as session:
+                    ms = session.query(Users).filter(Users.name_id == id_n).first()
+                    if ms == None:
+                        context.bot.send_message(chat_id=chat.id, text="Введи сначала цель под #цель")
+                    else:
+                        rating = Rating(users,sleep)
+                        rt=''
+                        for i in range(rating.shape[0]):
+                            rt+=str(i + 1)+") "+ str(rating['name'][i])+ ' - '+str( round(rating['total_points'][i]))+"\n"
+                        context.bot.send_message(chat_id=chat.id, text= rt)
+    except:
+        if s[1:7] == 'оценка' or s[1:8]=="рейтинг" or s[1:5] == 'цель' or s[1:7] == 'график' or s[1:5] == 'утро':
+            context.bot.send_message(chat_id=chat.id, text="Что-то не то, попробуйте еще раз или обратитесь к модератору")
              #pass
 
 
